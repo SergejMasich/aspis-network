@@ -291,3 +291,4 @@ if (typeof document !== "undefined" && !document.getElementById("aspis-keyframes
   `;
   document.head.appendChild(style);
 }
+
