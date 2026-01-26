@@ -9,10 +9,18 @@ export default function SiteHeader() {
         <div style={styles.brand}>ASPIS Network</div>
 
         <nav style={styles.nav}>
-          <a style={styles.link} href="/">Главная</a>
-          <a style={styles.link} href="/docs">Документы</a>
-          <a style={styles.link} href="/security">Безопасность</a>
-          <a style={styles.link} href="/deploy">Развертывание</a>
+          <a style={styles.link} href="/">
+            Главная
+          </a>
+          <a style={styles.link} href="/docs">
+            Документы
+          </a>
+          <a style={styles.link} href="/security">
+            Безопасность
+          </a>
+          <a style={styles.link} href="/deploy">
+            Развертывание
+          </a>
         </nav>
       </div>
     </header>
@@ -25,39 +33,37 @@ const styles: Record<string, React.CSSProperties> = {
     top: 0,
     left: 0,
     right: 0,
+    height: 72,
     zIndex: 50,
-
-    // ВАЖНО: трансформацию/прозрачность задаёт page.tsx через CSS variables:
-    transform: "translateY(var(--aspis-header-translate-y, 0px))",
-    opacity: "var(--aspis-header-opacity, 1)",
-    backdropFilter: "blur(var(--aspis-header-blur, 0px))",
-
-    background: "rgba(5,7,13,0.62)",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(0,0,0,0.35)",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+    backdropFilter: "blur(10px)",
+    transform: "translateY(var(--aspis-header-shift, 0px))",
+    opacity: "var(--aspis-header-opacity, 1)" as any,
+    transition: "opacity 120ms linear",
+    pointerEvents: "var(--aspis-header-pe, auto)" as any,
   },
   inner: {
-    width: "min(1200px, 100%)",
-    margin: "0 auto",
-    height: 64,
-    padding: "0 18px",
+    height: "100%",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    padding: "0 28px",
+    maxWidth: 1200,
+    margin: "0 auto",
   },
   brand: {
+    color: "rgba(255,255,255,0.92)",
     fontWeight: 700,
     letterSpacing: 0.4,
-    color: "rgba(255,255,255,0.92)",
   },
   nav: {
     display: "flex",
     gap: 22,
-    alignItems: "center",
   },
   link: {
-    color: "rgba(255,255,255,0.78)",
+    color: "rgba(255,255,255,0.75)",
     textDecoration: "none",
     fontSize: 14,
   },
 };
-
