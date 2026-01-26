@@ -1,68 +1,18 @@
 import "./globals.css";
-import Link from "next/link";
+import SiteHeader from "@/components/SiteHeader";
 
 export const metadata = {
   title: "ASPIS Network",
-    description: "Adaptive Stability Primitive for Inflation-Linked Assets",
-    };
+  description: "Adaptive Stability Primitive",
+};
 
-    export default function RootLayout({
-      children,
-      }: {
-        children: React.ReactNode;
-        }) {
-          return (
-              <html lang="ru">
-                    <body style={{ margin: 0, fontFamily: "system-ui, sans-serif" }}>
-                            
-                                    {/* ===== HEADER ===== */}
-                                            <header
-                                                      style={{
-                                                                  background: "#0b0f1a",
-                                                                              padding: "20px 40px",
-                                                                                          display: "flex",
-                                                                                                      justifyContent: "space-between",
-                                                                                                                  alignItems: "center",
-                                                                                                                            }}
-                                                                                                                                    >
-                                                                                                                                              <div style={{ color: "white", fontWeight: 600, fontSize: "20px" }}>
-                                                                                                                                                          ASPIS Network
-                                                                                                                                                                    </div>
-
-                                                                                                                                                                              <nav style={{ display: "flex", gap: "20px" }}>
-                                                                                                                                                                                          <Link href="/" style={{ color: "white", textDecoration: "none" }}>
-                                                                                                                                                                                                        Главная
-                                                                                                                                                                                                                    </Link>
-                                                                                                                                                                                                                                <Link href="/docs" style={{ color: "white", textDecoration: "none" }}>
-                                                                                                                                                                                                                                              Документы
-                                                                                                                                                                                                                                                          </Link>
-                                                                                                                                                                                                                                                                      <Link href="/security" style={{ color: "white", textDecoration: "none" }}>
-                                                                                                                                                                                                                                                                                    Безопасность
-                                                                                                                                                                                                                                                                                                </Link>
-                                                                                                                                                                                                                                                                                                            <Link href="/deploy" style={{ color: "white", textDecoration: "none" }}>
-                                                                                                                                                                                                                                                                                                                          Развертывание
-                                                                                                                                                                                                                                                                                                                                      </Link>
-                                                                                                                                                                                                                                                                                                                                                </nav>
-                                                                                                                                                                                                                                                                                                                                                        </header>
-
-                                                                                                                                                                                                                                                                                                                                                                {/* ===== PAGE CONTENT ===== */}
-                                                                                                                                                                                                                                                                                                                                                                        <main>{children}</main>
-
-                                                                                                                                                                                                                                                                                                                                                                                {/* ===== FOOTER ===== */}
-                                                                                                                                                                                                                                                                                                                                                                                        <footer
-                                                                                                                                                                                                                                                                                                                                                                                                  style={{
-                                                                                                                                                                                                                                                                                                                                                                                                              background: "#0b0f1a",
-                                                                                                                                                                                                                                                                                                                                                                                                                          padding: "20px 40px",
-                                                                                                                                                                                                                                                                                                                                                                                                                                      marginTop: "40px",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                  color: "#888",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                              fontSize: "14px",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                          textAlign: "center",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            >
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      © {new Date().getFullYear()} ASPIS Network — Adaptive Stability Primitive
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </footer>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </body>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ru">
+      <body>
+        <SiteHeader />
+        {children}
+      </body>
+    </html>
+  );
+}
