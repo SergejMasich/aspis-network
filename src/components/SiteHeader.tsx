@@ -1,80 +1,96 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-export default function SiteHeader() {
-  const [hide, setHide] = useState(false);
+type Props = {
+  /** Если true — шапка ведёт себя как “второй слой”: поверх hero и исчезает при скролле */
+  overlay?: boolean;
+};
+
+export default function SiteHeader({ overlay = false }: Props) {
+  const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
-    const onScroll = () => {
-      // После небольшого скролла — “уезжаем” вверх и исчезаем
-      setHide(window.scrollY > 60);
-    };
+    const onScroll = () => setScrollY(window.scrollY || 0);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // “Исчезание” за первые ~160px скролла
+  const { opacity, translateY, blur } = useMemo(() => {
+    if (!overlay) return { opacity: 1, translateY: 0, blur: 10 };
+    const t = Math.min(1, scrollY / 160);
+    return {
+      opacity: 1 - t,
+      translateY: -18 * t,
+      blur: 10 + 10 * t,
+    };
+  }, [overlay, scrollY]);
+
+  const styles: Record<string, React.CSSProperties> = {
+    header: {
+      position: overlay ? "absolute" : "sticky",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 50,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "18px 28px",
+      background: "rgba(2, 6, 10, 0.35)",
+      backdropFilter: `blur(${blur}px)`,
+      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      transform: `translateY(${translateY}px)`,
+      opacity,
+      pointerEvents: overlay && opacity < 0.05 ? "none" : "auto",
+      transition: "opacity 120ms linear, transform 120ms linear, backdrop-filter 120ms linear",
+    },
+    brand: {
+      fontWeight: 650,
+      letterSpacing: 0.4,
+      color: "rgba(255,255,255,0.92)",
+      textDecoration: "none",
+      fontSize: 16,
+    },
+    nav: {
+      display: "flex",
+      gap: 18,
+      alignItems: "center",
+      color: "rgba(255,255,255,0.78)",
+      fontSize: 14,
+    },
+    link: {
+      color: "rgba(255,255,255,0.78)",
+      textDecoration: "none",
+      padding: "8px 10px",
+      borderRadius: 12,
+      border: "1px solid transparent",
+      transition: "background 150ms ease, border-color 150ms ease, color 150ms ease",
+    },
+  };
+
   return (
-    <header
-      style={{
-        ...styles.header,
-        transform: hide ? "translateY(-110%)" : "translateY(0)",
-        opacity: hide ? 0 : 1,
-      }}
-    >
-      <div style={styles.inner}>
-        <div style={styles.logo}>ASPIS Network</div>
-        <nav style={styles.nav}>
-          <a style={styles.link} href="/">Главная</a>
-          <a style={styles.link} href="/docs">Документы</a>
-          <a style={styles.link} href="/security">Безопасность</a>
-          <a style={styles.link} href="/deploy">Развертывание</a>
-        </nav>
-      </div>
-      <div style={styles.divider} />
+    <header style={styles.header}>
+      <a href="/" style={styles.brand}>
+        ASPIS Network
+      </a>
+
+      <nav style={styles.nav}>
+        <a style={styles.link} href="/">
+          Главная
+        </a>
+        <a style={styles.link} href="/docs">
+          Документы
+        </a>
+        <a style={styles.link} href="/security">
+          Безопасность
+        </a>
+        <a style={styles.link} href="/deploy">
+          Развертывание
+        </a>
+      </nav>
     </header>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  header: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 50,
-    backdropFilter: "blur(16px)",
-    background: "rgba(5,7,11,0.55)",
-    transition: "transform 260ms ease, opacity 220ms ease",
-  },
-  inner: {
-    height: 64,
-    padding: "0 22px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    color: "#fff",
-    fontFamily:
-      "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-  },
-  logo: {
-    fontWeight: 700,
-    letterSpacing: 0.3,
-    opacity: 0.95,
-  },
-  nav: {
-    display: "flex",
-    gap: 18,
-    alignItems: "center",
-  },
-  link: {
-    color: "rgba(255,255,255,0.82)",
-    textDecoration: "none",
-    fontSize: 14,
-  },
-  divider: {
-    height: 1,
-    background: "rgba(255,255,255,0.06)",
-  },
-};
