@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React from "react";
 
 type AspisShieldProps = {
-  progress: number;
+  progress: number;       // 0..1
   unlocked: boolean;
   onClickTop?: () => void;
   onClickCore?: () => void;
@@ -18,112 +18,104 @@ export default function AspisShield({
   onClickBottom,
 }: AspisShieldProps) {
 
-  // Прогресс 0 → щит цельный
-  // Прогресс 1 → щит распался
-
-  const split = Math.min(progress, 1);
+  // вычисляем смещения частей щита
+  const split = progress;
 
   return (
-    <div style={styles.wrapper}>
-      
+    <div style={styles.wrap}>
+
       {/* Верхняя часть */}
       <div
+        onClick={unlocked ? onClickTop : undefined}
         style={{
           ...styles.part,
           ...styles.top,
-          transform: `translateY(${-120 * split}px)`,
-          opacity: 1,
+          transform: `translateY(${ -80 * split }px)`,
+          opacity: unlocked ? 1 : 0.9,
           cursor: unlocked ? "pointer" : "default",
         }}
-        onClick={unlocked ? onClickTop : undefined}
       >
-        {unlocked && <span style={styles.label}>AMO ARMOR</span>}
+        AMO ARMOR
       </div>
 
       {/* Ядро */}
       <div
+        onClick={unlocked ? onClickCore : undefined}
         style={{
           ...styles.core,
-          transform: `scale(${1 - 0.15 * split})`,
+          boxShadow: unlocked
+            ? "0 0 40px rgba(0,255,200,0.9)"
+            : "0 0 20px rgba(0,255,200,0.4)",
           cursor: unlocked ? "pointer" : "default",
         }}
-        onClick={unlocked ? onClickCore : undefined}
       >
-        {unlocked && <span style={styles.label}>CORE</span>}
+        CORE
       </div>
 
       {/* Нижняя часть */}
       <div
+        onClick={unlocked ? onClickBottom : undefined}
         style={{
           ...styles.part,
           ...styles.bottom,
-          transform: `translateY(${120 * split}px)`,
-          opacity: 1,
+          transform: `translateY(${ 80 * split }px)`,
+          opacity: unlocked ? 1 : 0.9,
           cursor: unlocked ? "pointer" : "default",
         }}
-        onClick={unlocked ? onClickBottom : undefined}
       >
-        {unlocked && <span style={styles.label}>RSI SHELL</span>}
+        RSI SHELL
       </div>
-
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  wrapper: {
+
+  wrap: {
     position: "relative",
-    width: "420px",
-    height: "420px",
-    margin: "0 auto",
-  },
-
-  part: {
-    position: "absolute",
-    left: "50%",
-    width: "340px",
-    height: "90px",
-    marginLeft: "-170px",
-    borderRadius: "20px",
-    background: "rgba(10,40,35,0.6)",
-    border: "1px solid rgba(0,255,200,0.3)",
-    boxShadow: "0 0 40px rgba(0,255,200,0.2)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "all 0.4s ease-out",
-  },
-
-  top: {
-    top: 60,
-  },
-
-  bottom: {
-    bottom: 60,
+    width: 320,
+    height: 320,
   },
 
   core: {
     position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: "260px",
-    height: "260px",
-    marginLeft: "-130px",
-    marginTop: "-130px",
+    inset: 40,
     borderRadius: "50%",
-    border: "2px solid rgba(0,255,200,0.35)",
-    boxShadow: "0 0 60px rgba(0,255,200,0.25)",
+    border: "2px solid rgba(0,255,200,0.6)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "all 0.4s ease-out",
-    background: "radial-gradient(circle at center, rgba(0,40,35,0.9), rgba(0,10,8,0.95))",
+    fontWeight: 700,
+    letterSpacing: 2,
+    color: "white",
+    background: "rgba(0,255,200,0.05)",
+    backdropFilter: "blur(8px)",
+    transition: "0.3s",
   },
 
-  label: {
-    fontSize: "14px",
-    letterSpacing: "2px",
-    fontWeight: 600,
-    color: "#00ffd0",
+  part: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    height: 70,
+    borderRadius: 14,
+    border: "1px solid rgba(0,255,200,0.35)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 700,
+    letterSpacing: 2,
+    color: "white",
+    background: "rgba(0,255,200,0.06)",
+    backdropFilter: "blur(6px)",
+    transition: "0.3s",
+  },
+
+  top: {
+    top: 0,
+  },
+
+  bottom: {
+    bottom: 0,
   },
 };
