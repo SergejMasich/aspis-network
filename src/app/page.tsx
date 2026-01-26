@@ -1,94 +1,102 @@
+"use client";
+
+import React from "react";
 import AspisShield from "@/components/AspisShield";
+import SiteHeader from "@/components/SiteHeader";
 
 export default function Home() {
   return (
     <main style={styles.page}>
-      {/* Scroll stage: 1 экран закреплён (hero+щит), дальше — landing section */}
-      <section style={styles.stage}>
-        <div style={styles.sticky}>
-          <div style={styles.heroGrid}>
-            <div style={styles.heroLeft}>
-              <h1 style={styles.h1}>ASPIS NETWORK</h1>
-              <p style={styles.lead}>
-                Autonomous Protocol Shield Infrastructure System — премиальная
-                структура протокола, раскрывающаяся при скролле: верхний слой,
-                ядро и нижний слой.
-              </p>
+      {/* HERO: 1 экран. Слой 1 = щит (внизу), слой 2 = шапка (поверх), текст/CTA тоже поверх */}
+      <section style={styles.hero}>
+        <SiteHeader overlay />
 
-              <div style={styles.ctaRow}>
-                <a href="#overview" style={{ ...styles.cta, ...styles.ctaPrimary }}>
-                  Explore Layers
-                </a>
-                <a href="/docs" style={{ ...styles.cta, ...styles.ctaSecondary }}>
-                  Whitepaper
-                </a>
-              </div>
+        <div style={styles.heroGrid}>
+          <div style={styles.heroLeft}>
+            <h1 style={styles.h1}>ASPIS NETWORK</h1>
 
-              <div style={styles.helper}>
-                Скролл вниз → щит “разблокируется” → появятся 3 кликабельные части
-              </div>
+            <p style={styles.lead}>
+              Autonomous Protocol Shield Infrastructure System —
+              премиальная структура протокола, раскрывающаяся при скролле:
+              верхний слой, ядро и нижний слой.
+            </p>
+
+            <div style={styles.ctaRow}>
+              <a href="#layers" style={{ ...styles.cta, ...styles.ctaPrimary }}>
+                Explore Layers
+              </a>
+              <a href="/docs" style={{ ...styles.cta, ...styles.ctaSecondary }}>
+                Whitepaper
+              </a>
             </div>
 
-            <div style={styles.heroRight}>
-              {/* AspisShield сам “живет” в скролле окна; мы просто держим его на первом экране */}
-              <AspisShield
-                onUnlocked={() => {
-                  // после unlock мягко прокручиваем к блоку обзора
-                  const el = document.getElementById("overview");
-                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              />
+            <div style={styles.helper}>
+              Скролл вниз → шапка исчезнет, щит “разблокируется” и раскроется на 3 части
             </div>
           </div>
 
-          <div style={styles.scrollHintWrap}>
-            <div style={styles.scrollLine} />
-            <div style={styles.scrollText}>Scroll to unlock layers</div>
+          <div style={styles.heroRight}>
+            {/* Щит живёт как фон/анимация.
+               Важно: кнопок ВНУТРИ щита нет — активируются только названия частей после unlock */}
+            <AspisShield
+              onUnlocked={() => {
+                // когда щит “разблокировался”, мягко доводим до секции лендинга (как в spacecoin-подобном паттерне)
+                const el = document.getElementById("layers");
+                el?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            />
           </div>
+        </div>
+
+        {/* Нижний маркер/индикатор */}
+        <div style={styles.scrollHintWrap}>
+          <div style={styles.scrollHintLine} />
+          <div style={styles.scrollHintText}>Scroll to unlock layers</div>
         </div>
       </section>
 
-      {/* Landing / overview */}
-      <section id="overview" style={styles.overview}>
-        <div style={styles.overviewInner}>
-          <h2 style={styles.h2}>LAYER OVERVIEW</h2>
-          <p style={styles.overviewLead}>
-            Здесь — кратко. Ниже “углубление”: отдельные страницы по каждому слою
-            (премиальный паттерн: быстро понять → углубиться).
-          </p>
+      {/* LANDING SECTION: краткое описание 3 частей + “Подробнее” (пока на якоря/страницы-заглушки) */}
+      <section id="layers" style={styles.layers}>
+        <div style={styles.layersInner}>
+          <div style={styles.layersTop}>
+            <div style={styles.kicker}>LAYER OVERVIEW</div>
+            <div style={styles.layersNote}>
+              Здесь — кратко. “Подробнее” ведёт на отдельные страницы (паттерн: быстро понять → углубиться).
+            </div>
+          </div>
 
           <div style={styles.cards}>
-            <a href="/layers/amo-armor" style={styles.card}>
+            <a href="/amo-armor" style={styles.card}>
               <div style={styles.cardTitle}>AMO ARMOR</div>
               <div style={styles.cardText}>
-                Верхняя часть щита. Модуль управления резервами: логика
-                распределения, управление капиталом, безопасные правила работы подсистем.
+                Верхняя часть щита. Управление резервами и капиталом: правила распределения, устойчивость,
+                контроль потоков и баланс.
               </div>
-              <div style={styles.cardLink}>Подробнее → AMO ARMOR</div>
+              <div style={styles.cardCta}>Подробнее →</div>
             </a>
 
-            <a href="/layers/core" style={styles.card}>
+            <a href="/core" style={styles.card}>
               <div style={styles.cardTitle}>CORE</div>
               <div style={styles.cardText}>
-                Ядро протокола. Неизменяемая часть (No Owner): принципы, инварианты,
-                гарантирующие устойчивость и предсказуемость системы.
+                Ядро протокола. Неизменяемая часть (No Owner): инварианты, принципы, гарантии устойчивости
+                и предсказуемости системы.
               </div>
-              <div style={styles.cardLink}>Подробнее → CORE</div>
+              <div style={styles.cardCta}>Подробнее →</div>
             </a>
 
-            <a href="/layers/rsi-shell" style={styles.card}>
+            <a href="/rsi-shell" style={styles.card}>
               <div style={styles.cardTitle}>RSI SHELL</div>
               <div style={styles.cardText}>
-                Нижняя часть щита. Адаптивная защита от волатильности: механизмы
-                стабилизации, реакция на рыночные режимы, защита потоков.
+                Нижняя часть щита. Адаптивная защита от волатильности: стабилизация, реакция на режимы рынка,
+                защита потоков.
               </div>
-              <div style={styles.cardLink}>Подробнее → RSI SHELL</div>
+              <div style={styles.cardCta}>Подробнее →</div>
             </a>
           </div>
-
-          <div style={styles.footerNote}>© 2026 ASPIS Network — Adaptive Stability Primitive</div>
         </div>
       </section>
+
+      <footer style={styles.footer}>© 2026 ASPIS Network — Adaptive Stability Primitive</footer>
     </main>
   );
 }
@@ -96,170 +104,185 @@ export default function Home() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
-    background: "radial-gradient(1200px 700px at 70% 20%, rgba(0,255,200,0.12), transparent 60%), #05070b",
-    color: "#fff",
-    fontFamily:
-      "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+    background: "#05070b",
+    color: "rgba(255,255,255,0.92)",
   },
 
-  // Делает “первый экран” липким, чтобы щит и hero были в одном слое
-  stage: {
-    minHeight: "180vh",
+  hero: {
     position: "relative",
-  },
-  sticky: {
-    position: "sticky",
-    top: 0,
-    height: "100vh",
+    minHeight: "100vh",
     overflow: "hidden",
-    padding: "96px 28px 28px", // сверху место под шапку
   },
+
   heroGrid: {
-    height: "100%",
+    position: "relative",
+    zIndex: 5,
     display: "grid",
-    gridTemplateColumns: "1.05fr 1fr",
+    gridTemplateColumns: "1.1fr 1fr",
     gap: 28,
+    padding: "120px 28px 84px",
     alignItems: "center",
   },
+
   heroLeft: {
-    maxWidth: 640,
+    maxWidth: 720,
   },
+
   heroRight: {
-    height: "100%",
+    minHeight: 520,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
   },
+
   h1: {
-    fontSize: 56,
-    letterSpacing: 3,
-    margin: "0 0 14px 0",
-    fontWeight: 500,
-  },
-  lead: {
     margin: 0,
-    opacity: 0.85,
-    lineHeight: 1.5,
-    fontSize: 16,
-    maxWidth: 520,
+    fontSize: 48,
+    letterSpacing: 1.2,
+    fontWeight: 650,
   },
+
+  lead: {
+    marginTop: 14,
+    marginBottom: 22,
+    maxWidth: 620,
+    lineHeight: 1.55,
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 16,
+  },
+
   ctaRow: {
     display: "flex",
     gap: 12,
-    marginTop: 18,
     alignItems: "center",
+    marginTop: 10,
   },
+
   cta: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    height: 44,
-    padding: "0 18px",
+    padding: "12px 18px",
     borderRadius: 999,
     textDecoration: "none",
-    fontSize: 14,
-    fontWeight: 600,
-    border: "1px solid rgba(255,255,255,0.14)",
-    backdropFilter: "blur(10px)",
+    fontWeight: 650,
+    letterSpacing: 0.2,
+    border: "1px solid rgba(255,255,255,0.10)",
+    transition: "transform 150ms ease, filter 150ms ease, background 150ms ease",
+    userSelect: "none",
   },
+
   ctaPrimary: {
-    background: "rgba(0,255,200,0.22)",
-    boxShadow: "0 0 30px rgba(0,255,200,0.18)",
-    color: "#eafffb",
+    background: "rgba(0, 255, 200, 0.18)",
+    color: "rgba(255,255,255,0.92)",
+    boxShadow: "0 0 40px rgba(0,255,200,0.10)",
   },
+
   ctaSecondary: {
-    background: "rgba(255,255,255,0.04)",
-    color: "rgba(255,255,255,0.9)",
+    background: "rgba(255,255,255,0.06)",
+    color: "rgba(255,255,255,0.85)",
   },
+
   helper: {
-    marginTop: 16,
+    marginTop: 18,
     fontSize: 13,
-    opacity: 0.6,
+    color: "rgba(255,255,255,0.55)",
   },
 
   scrollHintWrap: {
     position: "absolute",
-    right: 34,
+    right: 32,
     bottom: 26,
-    width: 260,
     display: "flex",
     flexDirection: "column",
-    gap: 10,
     alignItems: "flex-end",
+    gap: 8,
+    zIndex: 6,
     pointerEvents: "none",
-    opacity: 0.75,
-  },
-  scrollLine: {
-    width: 260,
-    height: 1,
-    background: "linear-gradient(90deg, rgba(0,255,200,0.0), rgba(0,255,200,0.55), rgba(0,255,200,0.0))",
-  },
-  scrollText: {
-    fontSize: 12,
-    opacity: 0.75,
   },
 
-  overview: {
-    padding: "80px 24px 60px",
-    borderTop: "1px solid rgba(255,255,255,0.06)",
-    background: "linear-gradient(180deg, rgba(5,7,11,0.0), rgba(5,7,11,0.85) 20%, rgba(5,7,11,1) 70%)",
+  scrollHintLine: {
+    width: 220,
+    height: 2,
+    background: "linear-gradient(90deg, rgba(0,255,200,0.0), rgba(0,255,200,0.55))",
+    borderRadius: 999,
   },
-  overviewInner: {
+
+  scrollHintText: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.55)",
+    letterSpacing: 0.2,
+  },
+
+  layers: {
+    padding: "72px 28px 64px",
+    borderTop: "1px solid rgba(255,255,255,0.06)",
+    background: "radial-gradient(1200px 600px at 20% 0%, rgba(0,255,200,0.06), rgba(0,0,0,0))",
+  },
+
+  layersInner: {
     maxWidth: 1100,
     margin: "0 auto",
   },
-  h2: {
-    margin: 0,
-    fontSize: 18,
-    letterSpacing: 2.4,
-    fontWeight: 600,
-    opacity: 0.85,
+
+  layersTop: {
+    marginBottom: 22,
   },
-  overviewLead: {
+
+  kicker: {
+    fontSize: 14,
+    letterSpacing: 2.2,
+    color: "rgba(255,255,255,0.55)",
+  },
+
+  layersNote: {
     marginTop: 10,
-    marginBottom: 26,
-    maxWidth: 720,
-    opacity: 0.65,
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 14,
     lineHeight: 1.55,
   },
+
   cards: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: 16,
+    gap: 14,
   },
+
   card: {
     display: "block",
     textDecoration: "none",
-    color: "inherit",
-    borderRadius: 18,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.04)",
     padding: 18,
-    boxShadow: "0 20px 70px rgba(0,0,0,0.35)",
-    backdropFilter: "blur(14px)",
+    borderRadius: 18,
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    boxShadow: "0 0 40px rgba(0,0,0,0.35)",
+    transition: "transform 180ms ease, border-color 180ms ease, background 180ms ease",
+    color: "rgba(255,255,255,0.90)",
   },
+
   cardTitle: {
-    fontSize: 14,
-    letterSpacing: 2,
-    fontWeight: 700,
+    fontWeight: 750,
+    letterSpacing: 1.4,
     marginBottom: 10,
   },
+
   cardText: {
-    opacity: 0.72,
-    lineHeight: 1.55,
-    fontSize: 13,
-    minHeight: 82,
+    fontSize: 14,
+    lineHeight: 1.6,
+    color: "rgba(255,255,255,0.70)",
+    minHeight: 96,
   },
-  cardLink: {
-    marginTop: 12,
-    fontSize: 13,
+
+  cardCta: {
+    marginTop: 14,
     fontWeight: 700,
-    color: "rgba(0,255,200,0.85)",
+    color: "rgba(0,255,200,0.75)",
   },
-  footerNote: {
-    marginTop: 46,
-    textAlign: "center",
-    opacity: 0.45,
+
+  footer: {
+    padding: "22px 28px 38px",
+    color: "rgba(255,255,255,0.45)",
     fontSize: 13,
+    textAlign: "center",
   },
 };
