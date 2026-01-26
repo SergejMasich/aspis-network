@@ -1,4 +1,5 @@
 import "./globals.css";
+import SiteHeader from "@/components/SiteHeader";
 
 export const metadata = {
   title: "ASPIS Network",
@@ -8,7 +9,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        <SiteHeader />
+        {children}
+      </body>
     </html>
   );
 }
