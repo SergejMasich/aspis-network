@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Props = {
-  /** 0..1 — прогресс раскрытия щита (начинается после исчезновения верхнего слоя) */
+  /** 0..1 — прогресс раскрытия щита (начинается после исчезновения hero) */
   progress: number;
   /** true когда щит полностью раскрылся */
   unlocked: boolean;
@@ -17,22 +17,41 @@ function clamp01(n: number) {
   return Math.max(0, Math.min(1, n));
 }
 
-export default function AspisShield({
-  progress,
-  unlocked,
-  onClickTop,
-  onClickCore,
-  onClickBottom,
-}: Props) {
+export default function AspisShield({ progress, unlocked, onClickTop, onClickCore, onClickBottom }: Props) {
   const p = clamp01(progress);
 
-  // Расхождение частей (верх/низ)
-  const spread = 220 * p; // px
-  const glow = unlocked ? 1 : 0.2 + 0.4 * p;
+  // Подгоняем "разлёт" под экран, чтобы верх/низ реально влезали на мобильных
+  const [maxSpread, setMaxSpread] = useState(200);
+  useEffect(() => {
+    const calc = () => {
+      const vh = window.innerHeight || 800;
+      // ~18% высоты экрана, но не больше 220 и не меньше 140
+      const s = Math.round(Math.max(140, Math.min(220, vh * 0.18)));
+      setMaxSpread(s);
+    };
+    calc();
+    window.addEventListener("resize", calc);
+    return () => window.removeEventListener("resize", calc);
+  }, []);
+
+  const spread = maxSpread * p;
+
+  // Премиальный "свет" растёт по мере прогресса
+  const glow = unlocked ? 1 : 0.18 + 0.55 * p;
+
+  // Заголовки верх/низ: проявляются во время разделения (а не только после unlocked)
+  const titlesAlpha = useMemo(() => {
+    if (unlocked) return 1;
+    // старт чуть позже, чтобы не мигало на нуле
+    const t = clamp01((p - 0.22) / 0.38);
+    // лёгкое easing
+    return 1 - Math.pow(1 - t, 2);
+  }, [p, unlocked]);
+
+  const canClick = unlocked;
 
   return (
     <div style={styles.wrap}>
-      {/* фон + потоки */}
       <div style={styles.bg} />
       <div style={{ ...styles.flow, opacity: 0.35 + 0.35 * (1 - p) }}>
         <div className="flowLine a" />
@@ -40,35 +59,32 @@ export default function AspisShield({
         <div className="flowLine c" />
       </div>
 
-      {/* центральная композиция */}
       <div style={styles.center}>
-        {/* верхняя часть */}
+        {/* TOP */}
         <button
           type="button"
-          onClick={unlocked ? onClickTop : undefined}
+          onClick={canClick ? onClickTop : undefined}
           style={{
             ...styles.piece,
             ...styles.top,
             transform: `translateY(${-spread}px)`,
-            cursor: unlocked ? "pointer" : "default",
-            opacity: 0.15 + 0.85 * p,
+            cursor: canClick ? "pointer" : "default",
+            opacity: 0.18 + 0.82 * p,
           }}
           aria-label="AMO ARMOR"
         >
           <div
             style={{
               ...styles.pieceInner,
-              boxShadow: `0 0 ${18 + 18 * glow}px rgba(0, 255, 200, ${
-                0.12 + 0.25 * glow
-              })`,
+              boxShadow: `0 0 ${18 + 18 * glow}px rgba(0, 255, 200, ${0.12 + 0.25 * glow})`,
               borderColor: `rgba(0,255,200,${0.22 + 0.22 * glow})`,
             }}
           >
             <div
               style={{
                 ...styles.title,
-                opacity: unlocked ? 1 : 0,
-                transform: unlocked ? "translateY(0)" : "translateY(6px)",
+                opacity: titlesAlpha,
+                transform: titlesAlpha > 0.9 ? "translateY(0)" : "translateY(6px)",
               }}
             >
               AMO ARMOR
@@ -76,29 +92,23 @@ export default function AspisShield({
           </div>
         </button>
 
-        {/* ядро */}
+        {/* CORE */}
         <button
           type="button"
-          onClick={unlocked ? onClickCore : undefined}
-          style={{
-            ...styles.coreBtn,
-            cursor: unlocked ? "pointer" : "default",
-          }}
+          onClick={canClick ? onClickCore : undefined}
+          style={{ ...styles.coreBtn, cursor: canClick ? "pointer" : "default" }}
           aria-label="CORE"
         >
           <div
             style={{
               ...styles.core,
-              boxShadow: `0 0 ${28 + 30 * glow}px rgba(0, 255, 200, ${
-                0.18 + 0.30 * glow
-              })`,
-              borderColor: `rgba(0,255,200,${0.22 + 0.30 * glow})`,
+              boxShadow: `0 0 ${28 + 30 * glow}px rgba(0, 255, 200, ${0.18 + 0.3 * glow})`,
+              borderColor: `rgba(0,255,200,${0.22 + 0.3 * glow})`,
               transform: `scale(${0.92 + 0.08 * p})`,
             }}
           >
             <div style={styles.coreLabel}>CORE</div>
 
-            {/* тонкие “потоки” к ядру */}
             <div
               style={{
                 ...styles.coreBeamTop,
@@ -116,33 +126,31 @@ export default function AspisShield({
           </div>
         </button>
 
-        {/* нижняя часть */}
+        {/* BOTTOM */}
         <button
           type="button"
-          onClick={unlocked ? onClickBottom : undefined}
+          onClick={canClick ? onClickBottom : undefined}
           style={{
             ...styles.piece,
             ...styles.bottom,
             transform: `translateY(${spread}px)`,
-            cursor: unlocked ? "pointer" : "default",
-            opacity: 0.15 + 0.85 * p,
+            cursor: canClick ? "pointer" : "default",
+            opacity: 0.18 + 0.82 * p,
           }}
           aria-label="RSI SHELL"
         >
           <div
             style={{
               ...styles.pieceInner,
-              boxShadow: `0 0 ${18 + 18 * glow}px rgba(0, 255, 200, ${
-                0.12 + 0.25 * glow
-              })`,
+              boxShadow: `0 0 ${18 + 18 * glow}px rgba(0, 255, 200, ${0.12 + 0.25 * glow})`,
               borderColor: `rgba(0,255,200,${0.22 + 0.22 * glow})`,
             }}
           >
             <div
               style={{
                 ...styles.title,
-                opacity: unlocked ? 1 : 0,
-                transform: unlocked ? "translateY(0)" : "translateY(-6px)",
+                opacity: titlesAlpha,
+                transform: titlesAlpha > 0.9 ? "translateY(0)" : "translateY(-6px)",
               }}
             >
               RSI SHELL
@@ -150,10 +158,7 @@ export default function AspisShield({
           </div>
         </button>
 
-        {/* подсказка */}
-        <div style={{ ...styles.hint, opacity: unlocked ? 0 : 0.55 }}>
-          Scroll to unlock layers
-        </div>
+        <div style={{ ...styles.hint, opacity: unlocked ? 0 : 0.55 }}>Scroll to unlock layers</div>
         <div style={{ ...styles.progressTrack, opacity: unlocked ? 0 : 0.65 }}>
           <div style={{ ...styles.progressFill, width: `${Math.round(p * 100)}%` }} />
         </div>
@@ -187,14 +192,14 @@ export default function AspisShield({
         }
         .flowLine.c {
           top: 66%;
-          animation-duration: 3.7s;
+          animation-duration: 3.1s;
         }
         @keyframes slide {
           0% {
-            transform: translateX(-18%);
+            transform: translateX(-12%);
           }
           100% {
-            transform: translateX(18%);
+            transform: translateX(12%);
           }
         }
       `}</style>
@@ -204,20 +209,23 @@ export default function AspisShield({
 
 const styles: Record<string, React.CSSProperties> = {
   wrap: {
-    position: "absolute",
-    inset: 0,
+    position: "relative",
+    width: "min(720px, 92vw)",
+    height: "min(560px, 70vh)",
+    borderRadius: 26,
     overflow: "hidden",
-    pointerEvents: "auto",
   },
   bg: {
     position: "absolute",
     inset: 0,
     background:
-      "radial-gradient(1200px 800px at 50% 60%, rgba(0,255,200,0.10), rgba(0,0,0,0) 60%), radial-gradient(900px 700px at 25% 80%, rgba(0,255,200,0.07), rgba(0,0,0,0) 60%), radial-gradient(900px 700px at 75% 80%, rgba(0,255,200,0.06), rgba(0,0,0,0) 60%)",
+      "radial-gradient(900px 600px at 50% 45%, rgba(0,255,200,0.12), transparent 60%), radial-gradient(800px 500px at 30% 20%, rgba(0,160,255,0.06), transparent 55%), #05070d",
+    filter: "saturate(1.05)",
   },
   flow: {
     position: "absolute",
     inset: 0,
+    pointerEvents: "none",
   },
   center: {
     position: "absolute",
@@ -228,17 +236,16 @@ const styles: Record<string, React.CSSProperties> = {
   piece: {
     position: "absolute",
     width: "min(520px, 84vw)",
-    height: 92,
-    background: "transparent",
+    height: 110,
     border: "none",
+    background: "transparent",
     padding: 0,
   },
   pieceInner: {
     width: "100%",
     height: "100%",
     borderRadius: 18,
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))",
     border: "1px solid rgba(255,255,255,0.08)",
     backdropFilter: "blur(8px)",
     display: "grid",
@@ -255,6 +262,7 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 3,
     color: "rgba(235,255,250,0.92)",
     transition: "opacity 400ms ease, transform 400ms ease",
+    fontWeight: 700,
   },
   coreBtn: {
     position: "relative",
@@ -290,8 +298,7 @@ const styles: Record<string, React.CSSProperties> = {
     left: "50%",
     width: 2,
     transform: "translateX(-50%)",
-    background:
-      "linear-gradient(180deg, rgba(0,255,200,0.0), rgba(0,255,200,0.55), rgba(0,255,200,0.0))",
+    background: "linear-gradient(180deg, rgba(0,255,200,0.0), rgba(0,255,200,0.55), rgba(0,255,200,0.0))",
     filter: "blur(0.2px)",
   },
   coreBeamBottom: {
@@ -300,8 +307,7 @@ const styles: Record<string, React.CSSProperties> = {
     left: "50%",
     width: 2,
     transform: "translateX(-50%)",
-    background:
-      "linear-gradient(0deg, rgba(0,255,200,0.0), rgba(0,255,200,0.55), rgba(0,255,200,0.0))",
+    background: "linear-gradient(0deg, rgba(0,255,200,0.0), rgba(0,255,200,0.55), rgba(0,255,200,0.0))",
     filter: "blur(0.2px)",
   },
   hint: {
