@@ -3,95 +3,91 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AspisShield from "@/components/AspisShield";
 
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v));
+}
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 export default function Home() {
   const stageRef = useRef<HTMLDivElement | null>(null);
 
-  // 0..1 — прогресс раскрытия щита (ВТОРАЯ фаза)
-  const [stageProgress, setStageProgress] = useState(0);
+  const [heroP, setHeroP] = useState(0); // уход шапки
+  const [shieldP, setShieldP] = useState(0); // раскрытие щита
 
-  // Когда щит "разблокировался"
-  const unlocked = stageProgress >= 0.999;
-
-  // Две фазы скролла:
-  // A) шапка уезжает (headerPhase)
-  // B) щит раскрывается (shieldPhase) — начинается сразу после A
-  const stageConfig = useMemo(() => {
-    if (typeof window === "undefined") {
-      return { headerScrollPx: 520, shieldScrollPx: 760, totalScrollPx: 1280 };
-    }
-
-    // Подбери при желании, но эти значения дают “без пустоты” и быстрый старт раскрытия.
-    const headerScrollPx = Math.max(420, Math.floor(window.innerHeight * 0.55));
-    const shieldScrollPx = Math.max(520, Math.floor(window.innerHeight * 0.80));
-    return {
-      headerScrollPx,
-      shieldScrollPx,
-      totalScrollPx: headerScrollPx + shieldScrollPx,
-    };
+  // Длины этапов (в пикселях) считаем от высоты экрана
+  const lengths = useMemo(() => {
+    if (typeof window === "undefined") return { hero: 700, shield: 900, hold: 420, total: 2020 };
+    const vh = window.innerHeight || 900;
+    const hero = Math.max(560, Math.round(vh * 0.75));   // шапка уезжает
+    const shield = Math.max(760, Math.round(vh * 1.05)); // раскрытие щита
+    const hold = Math.max(260, Math.round(vh * 0.45));   // “пауза” на полностью раскрытом щите
+    return { hero, shield, hold, total: hero + shield + hold };
   }, []);
+
+  const unlocked = shieldP >= 0.999;
 
   useEffect(() => {
     let raf = 0;
-
-    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
     const update = () => {
       const el = stageRef.current;
       if (!el) return;
 
       const rect = el.getBoundingClientRect();
-      const raw = -rect.top; // сколько “проскроллено” внутри stage
+      const scrolledPx = Math.max(0, -rect.top);
 
-      // Фаза A — уход шапки
-      const headerPhaseRaw = clamp01(raw / stageConfig.headerScrollPx);
-      const headerPhase = easeOutCubic(headerPhaseRaw);
+      // 1) HERO
+      const h = clamp01(scrolledPx / lengths.hero);
+      const hero = easeOutCubic(h);
 
-      // Фаза B — раскрытие щита (сразу после A)
-      const shieldPhaseRaw = clamp01((raw - stageConfig.headerScrollPx) / stageConfig.shieldScrollPx);
-      const shieldPhase = easeOutCubic(shieldPhaseRaw);
+      // 2) SHIELD — начинается сразу после завершения HERO
+      const s = clamp01((scrolledPx - lengths.hero) / lengths.shield);
+      const shield = easeInOutCubic(s);
 
-      setStageProgress(shieldPhase);
+      setHeroP(hero);
+      setShieldP(shield);
 
-      // Управляем "шапкой" (в layout.tsx) через CSS vars:
-      // Уводим вверх до полного исчезновения + гасим
-      // (Здесь можно подстроить высоту ухода, но важно: теперь она полностью “заканчивается” до старта щита)
-      const headerHidePx = Math.round((window?.innerHeight ? window.innerHeight * 0.45 : 320) * headerPhase);
-      const headerOpacity = 1 - headerPhase;
-
+      // (если у тебя в layout.tsx шапка завязана на CSS переменные — оставляем, но теперь только heroP)
+      const headerHidePx = Math.round(110 * hero);
+      const headerOpacity = 1 - hero;
       document.documentElement.style.setProperty("--aspis-header-translate-y", `${-headerHidePx}px`);
       document.documentElement.style.setProperty("--aspis-header-opacity", `${headerOpacity}`);
-      document.documentElement.style.setProperty("--aspis-header-blur", `${Math.round(10 * headerPhase)}px`);
+      document.documentElement.style.setProperty("--aspis-header-blur", `${Math.round(10 * hero)}px`);
 
       raf = requestAnimationFrame(update);
     };
 
     raf = requestAnimationFrame(update);
     return () => cancelAnimationFrame(raf);
-  }, [stageConfig.headerScrollPx, stageConfig.shieldScrollPx]);
+  }, [lengths.hero, lengths.shield]);
 
   return (
     <main style={styles.page}>
-      {/* СЦЕНА 1: первый экран (двухслойный) */}
+      {/* СЦЕНА 1: pinned */}
       <section
         ref={stageRef}
-        style={{ ...styles.stage, height: `calc(100vh + ${stageConfig.totalScrollPx}px)` }}
+        style={{
+          ...styles.stage,
+          height: `calc(100vh + ${lengths.total}px)`,
+        }}
       >
         <div style={styles.sticky}>
-          {/* Слой щита (фон/визуал) */}
-          <div style={styles.shieldLayer}>
-            <AspisShield
-              progress={stageProgress}
-              unlocked={unlocked}
-              onClickTop={() => (window.location.href = "/docs")}
-              onClickCore={() => (window.location.href = "/security")}
-              onClickBottom={() => (window.location.href = "/deploy")}
-            />
-          </div>
-
-          {/* Слой шапки (контент поверх) — по центру экрана */}
-          <div style={styles.heroLayer}>
-            <div style={styles.heroContent}>
+          {/* HERO слой (на весь экран, по центру) */}
+          <div
+            style={{
+              ...styles.heroLayer,
+              opacity: 1 - heroP,
+              transform: `translateY(${-heroP * 120}px)`,
+              pointerEvents: heroP > 0.85 ? "none" : "auto",
+            }}
+          >
+            <div style={styles.heroInner}>
+              <div style={styles.brandKicker}>ASPIS Network</div>
               <h1 style={styles.h1}>ASPIS NETWORK</h1>
 
               <p style={styles.lead}>
@@ -111,57 +107,68 @@ export default function Home() {
                 </a>
               </div>
 
-              <div style={styles.helper}>
-                Скролл вниз — сначала исчезнет верхний слой, затем щит “разблокируется” и станет кликабельным.
-              </div>
+              <div style={styles.helper}>Scroll вниз — шапка исчезнет, затем щит раскроется на 3 части.</div>
             </div>
+          </div>
+
+          {/* SHIELD слой (всегда по центру) */}
+          <div style={styles.shieldLayer}>
+            <AspisShield
+              progress={shieldP}
+              unlocked={unlocked}
+              onClickTop={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onClickCore={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onClickBottom={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            />
+          </div>
+
+          {/* Прогресс (можешь оставить) */}
+          <div style={styles.progressWrap}>
+            <div style={styles.progressLine} />
+            <div style={{ ...styles.progressFill, width: `${Math.round((heroP * 0.35 + shieldP * 0.65) * 100)}%` }} />
+            <div style={styles.progressText}>{unlocked ? "Unlocked — tap a layer" : "Scroll to unlock layers"}</div>
           </div>
         </div>
       </section>
 
-      {/* Секция ниже: появится только ПОСЛЕ полного раскрытия щита (потому что сцена заканчивается ровно на конце фазы B) */}
+      {/* СЦЕНА 2: блоки появляются только ПОСЛЕ полной сцены (и после hold) */}
       <section id="overview" style={styles.overview}>
-        <h2 style={styles.overviewTitle}>LAYER OVERVIEW</h2>
-        <p style={styles.overviewText}>
-          Здесь — кратко. “Подробнее” ведёт на отдельные страницы (паттерн: быстро понять → углубиться).
-        </p>
-
-        <div style={styles.cards}>
-          <div style={styles.card}>
-            <div style={styles.cardTitle}>AMO ARMOR</div>
-            <div style={styles.cardText}>
-              Верхняя часть щита. Управление резервами и капиталом: правила распределения, устойчивость,
-              контроль потоков и баланс.
+        <div style={styles.overviewInner}>
+          <div style={styles.overviewHeader}>
+            <div style={styles.overviewKicker}>LAYER OVERVIEW</div>
+            <div style={styles.overviewSub}>
+              Здесь — кратко. “Подробнее” ведёт на отдельные страницы (паттерн: быстро понять → углубиться).
             </div>
-            <a style={styles.more} href="/docs">
-              Подробнее →
-            </a>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.cardTitle}>CORE</div>
-            <div style={styles.cardText}>
-              Ядро протокола. Неизменяемая часть (No Owner): инварианты, принципы, гарантии устойчивости и
-              предсказуемости системы.
+          <div style={styles.cards}>
+            <div style={styles.card}>
+              <div style={styles.cardTitle}>AMO ARMOR</div>
+              <div style={styles.cardText}>
+                Верхняя часть щита. Управление резервами и капиталом: правила распределения, устойчивость, контроль потоков и баланс.
+              </div>
+              <a href="/docs" style={styles.cardLink}>Подробнее →</a>
             </div>
-            <a style={styles.more} href="/security">
-              Подробнее →
-            </a>
+
+            <div style={styles.card}>
+              <div style={styles.cardTitle}>CORE</div>
+              <div style={styles.cardText}>
+                Ядро протокола. Неизменяемая часть (No Owner): инварианты, принципы, гарантии устойчивости и предсказуемости системы.
+              </div>
+              <a href="/security" style={styles.cardLink}>Подробнее →</a>
+            </div>
+
+            <div style={styles.card}>
+              <div style={styles.cardTitle}>RSI SHELL</div>
+              <div style={styles.cardText}>
+                Нижняя часть щита. Адаптивная защита от волатильности: стабилизация, реакция на режимы рынка, защита потоков.
+              </div>
+              <a href="/deploy" style={styles.cardLink}>Подробнее →</a>
+            </div>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.cardTitle}>RSI SHELL</div>
-            <div style={styles.cardText}>
-              Нижняя часть щита. Адаптивная защита от волатильности: стабилизация, реакция на режимы рынка,
-              защита потоков.
-            </div>
-            <a style={styles.more} href="/deploy">
-              Подробнее →
-            </a>
-          </div>
+          <div style={styles.footer}>© 2026 ASPIS Network — Adaptive Stability Primitive</div>
         </div>
-
-        <div style={styles.footer}>© 2026 ASPIS Network — Adaptive Stability Primitive</div>
       </section>
     </main>
   );
@@ -170,15 +177,13 @@ export default function Home() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
-    background: "radial-gradient(1200px 600px at 50% 55%, rgba(0,255,170,0.14), rgba(0,0,0,0) 60%), #05080b",
+    background: "#05070d",
     color: "white",
-    overflowX: "hidden",
   },
 
   stage: {
     position: "relative",
   },
-
   sticky: {
     position: "sticky",
     top: 0,
@@ -186,144 +191,171 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
   },
 
-  // Щит — отдельный слой
-  shieldLayer: {
-    position: "absolute",
-    inset: 0,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-    pointerEvents: "auto",
-  },
-
-  // Контент шапки — отдельный слой
   heroLayer: {
     position: "absolute",
     inset: 0,
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    zIndex: 2,
-    paddingTop: "clamp(24px, 6vh, 72px)",
-    pointerEvents: "none", // чтобы клики проходили к щиту (когда разблокирован)
+    display: "grid",
+    placeItems: "center",
+    padding: "22px 18px",
+    transition: "opacity 120ms linear",
   },
-
-  heroContent: {
-    width: "min(920px, 92vw)",
-    padding: "0 8px",
-    pointerEvents: "auto",
+  heroInner: {
+    width: "min(980px, 92vw)",
   },
-
+  brandKicker: {
+    fontSize: 13,
+    letterSpacing: 1.5,
+    color: "rgba(255,255,255,0.55)",
+    marginBottom: 10,
+  },
   h1: {
+    fontSize: 56,
+    letterSpacing: 2,
+    lineHeight: 1.02,
     margin: 0,
-    fontSize: "clamp(44px, 7vw, 72px)",
-    letterSpacing: "0.08em",
-    fontWeight: 700,
   },
-
   lead: {
-    marginTop: 14,
-    marginBottom: 18,
-    color: "rgba(255,255,255,0.78)",
-    fontSize: "clamp(14px, 2vw, 16px)",
-    lineHeight: 1.55,
-    maxWidth: 700,
+    marginTop: 18,
+    marginBottom: 20,
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 16,
+    lineHeight: 1.6,
+    maxWidth: 720,
   },
-
   ctaRow: {
     display: "flex",
     gap: 12,
-    alignItems: "center",
-    marginTop: 10,
+    marginTop: 12,
+    flexWrap: "wrap",
   },
-
   cta: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "12px 18px",
+    height: 44,
+    padding: "0 18px",
     borderRadius: 999,
     textDecoration: "none",
     fontWeight: 600,
-    border: "1px solid rgba(255,255,255,0.14)",
+    fontSize: 14,
+    border: "1px solid rgba(255,255,255,0.12)",
     backdropFilter: "blur(10px)",
+    color: "white",
   },
-
   ctaPrimary: {
-    background: "rgba(0, 255, 170, 0.12)",
+    background: "rgba(0, 255, 200, 0.18)",
+    boxShadow: "0 10px 30px rgba(0,255,200,0.08)",
   },
-
   ctaSecondary: {
-    background: "rgba(255,255,255,0.05)",
+    background: "rgba(255,255,255,0.06)",
   },
-
   helper: {
     marginTop: 14,
-    color: "rgba(255,255,255,0.45)",
     fontSize: 13,
-    maxWidth: 760,
+    color: "rgba(255,255,255,0.52)",
+    maxWidth: 720,
   },
 
-  overview: {
-    padding: "72px 18px 54px",
-    maxWidth: 1100,
-    margin: "0 auto",
+  shieldLayer: {
+    position: "absolute",
+    inset: 0,
+    display: "grid",
+    placeItems: "center",
+    padding: "18px",
   },
 
-  overviewTitle: {
-    margin: 0,
-    fontSize: 14,
-    letterSpacing: "0.18em",
+  progressWrap: {
+    position: "absolute",
+    right: 20,
+    bottom: 28,
+    width: "min(520px, 45vw)",
+    height: 20,
+    pointerEvents: "none",
+  },
+  progressLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 10,
+    height: 1,
+    background: "rgba(255,255,255,0.16)",
+  },
+  progressFill: {
+    position: "absolute",
+    left: 0,
+    top: 9,
+    height: 3,
+    background: "rgba(0,255,200,0.7)",
+    boxShadow: "0 0 18px rgba(0,255,200,0.35)",
+    borderRadius: 999,
+  },
+  progressText: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    fontSize: 12,
     color: "rgba(255,255,255,0.55)",
   },
 
-  overviewText: {
-    marginTop: 10,
-    marginBottom: 28,
-    color: "rgba(255,255,255,0.7)",
+  overview: {
+    padding: "70px 20px 64px",
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+    background:
+      "radial-gradient(900px 600px at 20% 10%, rgba(0,255,200,0.07), transparent 60%), radial-gradient(800px 500px at 80% 20%, rgba(0,160,255,0.05), transparent 55%), #05070d",
   },
-
-  cards: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: 16,
+  overviewInner: {
+    width: "min(1100px, 94vw)",
+    margin: "0 auto",
   },
-
-  card: {
-    borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.03)",
-    padding: 18,
-    minHeight: 180,
+  overviewHeader: {
+    marginBottom: 22,
   },
-
-  cardTitle: {
-    fontWeight: 700,
-    letterSpacing: "0.12em",
+  overviewKicker: {
+    fontSize: 12,
+    letterSpacing: 2.2,
+    color: "rgba(255,255,255,0.55)",
     marginBottom: 10,
   },
-
-  cardText: {
-    color: "rgba(255,255,255,0.7)",
-    lineHeight: 1.5,
-    fontSize: 14,
+  overviewSub: {
+    color: "rgba(255,255,255,0.75)",
+    lineHeight: 1.6,
   },
-
-  more: {
+  cards: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: 16,
+    marginTop: 18,
+  },
+  card: {
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.04)",
+    backdropFilter: "blur(10px)",
+    padding: 18,
+  },
+  cardTitle: {
+    fontWeight: 800,
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  cardText: {
+    color: "rgba(255,255,255,0.72)",
+    lineHeight: 1.6,
+    fontSize: 14,
+    minHeight: 86,
+  },
+  cardLink: {
     display: "inline-flex",
     marginTop: 14,
-    color: "rgba(0,255,170,0.8)",
+    color: "rgba(0,255,200,0.85)",
     textDecoration: "none",
-    fontWeight: 600,
+    fontWeight: 700,
   },
-
   footer: {
-    marginTop: 40,
+    marginTop: 26,
     paddingTop: 18,
     borderTop: "1px solid rgba(255,255,255,0.08)",
     color: "rgba(255,255,255,0.45)",
     fontSize: 13,
-    textAlign: "center",
   },
 };
